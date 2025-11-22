@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { query } = require("./src/config/database");
+const { query } = require("../src/config/database");
 
 async function createAdminUser() {
   try {
@@ -57,7 +57,3 @@ async function createAdminUser() {
 }
 
 createAdminUser();
-
-
-
-

@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { query } = require("./src/config/database");
+const { query } = require("../src/config/database");
 
 // Función para generar username único basado en nombre y email
 function generateUsername(nombre, correo, existingUsernames) {
@@ -159,7 +159,3 @@ async function createMissingUsers() {
 }
 
 createMissingUsers();
-
-
-
-
