@@ -1,0 +1,295 @@
+-- =========================================================
+-- CREACIÓN COMPLETA DE LA BASE DE DATOS AI-MedAssistant
+-- Con Stored Procedures
+-- =========================================================
+-- Ejecutar con el superusuario de postgres (por ejemplo: psql -U postgres)
+-- =========================================================
+
+-- 1) Crear la base de datos y usuario propietario
+DROP DATABASE IF EXISTS ai_med_db;
+DROP ROLE IF EXISTS ai_med_user;
+
+CREATE ROLE ai_med_user WITH LOGIN PASSWORD 'ai_med_pass';
+CREATE DATABASE ai_med_db OWNER ai_med_user;
+
+\connect ai_med_db;
+
+-- =========================================================
+-- 2) Tablas principales
+-- =========================================================
+
+-- USUARIOS Y ROLES
+CREATE TABLE ROL (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE USUARIO (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(80) NOT NULL UNIQUE,
+  correo VARCHAR(255) NOT NULL UNIQUE,
+  telefono VARCHAR(30),
+  password_hash VARCHAR(255) NOT NULL,
+  rol_id INT NOT NULL REFERENCES ROL(id) ON DELETE RESTRICT,
+  creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE ADMINISTRADOR (
+  id SERIAL PRIMARY KEY,
+  usuario_id INT UNIQUE NOT NULL REFERENCES USUARIO(id) ON DELETE CASCADE
+);
+
+-- CATALOGOS CLINICOS
+CREATE TABLE ESPECIALIDAD (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE TIPO_SANGRE (
+  id SERIAL PRIMARY KEY,
+  tipo VARCHAR(10) NOT NULL UNIQUE
+);
+
+CREATE TABLE OCUPACION (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE ESTADO_CIVIL (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE
+);
+
+CREATE TABLE ESTADO_CITA (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE
+);
+
+CREATE TABLE TIPO_CITA (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE
+);
+
+CREATE TABLE ESTADO_CONSULTA (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE
+);
+
+-- MEDICO Y PACIENTE
+CREATE TABLE MEDICO (
+  id SERIAL PRIMARY KEY,
+  usuario_id INT NOT NULL UNIQUE REFERENCES USUARIO(id) ON DELETE CASCADE,
+  cedula VARCHAR(60) NOT NULL UNIQUE,
+  descripcion TEXT,
+  id_especialidad INT REFERENCES ESPECIALIDAD(id) ON DELETE SET NULL,
+  foto_archivo_id INT
+);
+
+CREATE TABLE PACIENTE (
+  id SERIAL PRIMARY KEY,
+  usuario_id INT NOT NULL UNIQUE REFERENCES USUARIO(id) ON DELETE CASCADE,
+  fecha_nacimiento DATE,
+  sexo VARCHAR(20),
+  altura NUMERIC(5,2),
+  peso NUMERIC(6,2),
+  estilo_vida VARCHAR(120),
+  id_tipo_sangre INT REFERENCES TIPO_SANGRE(id) ON DELETE SET NULL,
+  id_ocupacion INT REFERENCES OCUPACION(id) ON DELETE SET NULL,
+  id_estado_civil INT REFERENCES ESTADO_CIVIL(id) ON DELETE SET NULL,
+  id_medico_gen INT REFERENCES MEDICO(id) ON DELETE SET NULL,
+  foto_archivo_id INT
+);
+
+-- GEOGRAFÍA Y DIRECCIONES
+CREATE TABLE PAIS (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE
+);
+
+CREATE TABLE ESTADO (
+  id SERIAL PRIMARY KEY,
+  pais_id INT NOT NULL REFERENCES PAIS(id),
+  nombre VARCHAR(120) NOT NULL
+);
+
+CREATE TABLE CIUDAD (
+  id SERIAL PRIMARY KEY,
+  estado_id INT NOT NULL REFERENCES ESTADO(id),
+  nombre VARCHAR(120) NOT NULL
+);
+
+CREATE TABLE COLONIA (
+  id SERIAL PRIMARY KEY,
+  ciudad_id INT NOT NULL REFERENCES CIUDAD(id),
+  nombre VARCHAR(120) NOT NULL,
+  codigo_postal VARCHAR(12)
+);
+
+CREATE TABLE DIRECCION_PACIENTE (
+  id SERIAL PRIMARY KEY,
+  paciente_id INT NOT NULL REFERENCES PACIENTE(id) ON DELETE CASCADE,
+  calle VARCHAR(200),
+  numero_ext VARCHAR(30),
+  numero_int VARCHAR(30),
+  id_colonia INT NOT NULL REFERENCES COLONIA(id)
+);
+
+CREATE TABLE CLINICA (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(200) NOT NULL,
+  telefono VARCHAR(30),
+  correo VARCHAR(255)
+);
+
+CREATE TABLE DIRECCION_CLINICA (
+  id SERIAL PRIMARY KEY,
+  clinica_id INT NOT NULL REFERENCES CLINICA(id) ON DELETE CASCADE,
+  calle VARCHAR(200),
+  numero_ext VARCHAR(30),
+  numero_int VARCHAR(30),
+  id_colonia INT NOT NULL REFERENCES COLONIA(id)
+);
+
+CREATE TABLE CONSULTORIO (
+  id SERIAL PRIMARY KEY,
+  clinica_id INT NOT NULL REFERENCES CLINICA(id) ON DELETE CASCADE,
+  nombre_numero VARCHAR(120),
+  piso_zona VARCHAR(60)
+);
+
+-- ARCHIVOS
+CREATE TABLE ARCHIVO (
+  id SERIAL PRIMARY KEY,
+  tipo VARCHAR(100) NOT NULL,
+  url TEXT NOT NULL,
+  hash_integridad VARCHAR(128),
+  creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE INTERPRETACION_ARCHIVO (
+  id SERIAL PRIMARY KEY,
+  id_archivo INT REFERENCES ARCHIVO(id) ON DELETE CASCADE,
+  id_medico INT REFERENCES MEDICO(id) ON DELETE SET NULL,
+  id_consulta INT,
+  fuente VARCHAR(120),
+  resultado TEXT,
+  fecha TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE ARCHIVO_ASOCIACION (
+  id SERIAL PRIMARY KEY,
+  archivo_id INT REFERENCES ARCHIVO(id) ON DELETE CASCADE,
+  entidad VARCHAR(40),
+  entidad_id INT,
+  descripcion VARCHAR(255),
+  creado_por_usuario_id INT REFERENCES USUARIO(id),
+  fecha_creacion TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- CITAS, CONSULTAS Y EPISODIOS
+CREATE TABLE EPISODIO (
+  id SERIAL PRIMARY KEY,
+  id_paciente INT REFERENCES PACIENTE(id) ON DELETE CASCADE,
+  fecha_inicio TIMESTAMPTZ DEFAULT NOW(),
+  fecha_fin TIMESTAMPTZ,
+  motivo TEXT
+);
+
+CREATE TABLE CITA (
+  id SERIAL PRIMARY KEY,
+  paciente_id INT REFERENCES PACIENTE(id) ON DELETE CASCADE,
+  medico_id INT REFERENCES MEDICO(id),
+  id_consultorio INT REFERENCES CONSULTORIO(id),
+  fecha_inicio TIMESTAMPTZ,
+  fecha_fin TIMESTAMPTZ,
+  id_estado_cita INT REFERENCES ESTADO_CITA(id),
+  id_tipo_cita INT REFERENCES TIPO_CITA(id)
+);
+
+CREATE TABLE CONSULTA (
+  id SERIAL PRIMARY KEY,
+  cita_id INT REFERENCES CITA(id) ON DELETE CASCADE,
+  id_estado_consulta INT REFERENCES ESTADO_CONSULTA(id),
+  id_episodio INT REFERENCES EPISODIO(id) ON DELETE CASCADE,
+  fecha_hora TIMESTAMPTZ DEFAULT NOW(),
+  narrativa TEXT,
+  mongo_consulta_id VARCHAR(64)
+);
+
+-- SESIONES, AUDITORÍA, NOTIFICACIONES, ACCESOS Y ASEGURADORAS
+CREATE TABLE SESION_AVATAR (
+  id SERIAL PRIMARY KEY,
+  id_usuario INT REFERENCES USUARIO(id),
+  id_paciente INT REFERENCES PACIENTE(id),
+  id_medico INT REFERENCES MEDICO(id),
+  fecha_inicio TIMESTAMPTZ DEFAULT NOW(),
+  fecha_fin TIMESTAMPTZ
+);
+
+CREATE TABLE AUDITORIA (
+  id SERIAL PRIMARY KEY,
+  usuario_id INT REFERENCES USUARIO(id),
+  accion VARCHAR(120),
+  entidad VARCHAR(60),
+  entidad_id INT,
+  fecha_hora TIMESTAMPTZ DEFAULT NOW(),
+  detalle JSONB
+);
+
+CREATE TABLE ESTADO_CODIGO (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE
+);
+
+CREATE TABLE ACCESO_CODIGO (
+  id SERIAL PRIMARY KEY,
+  codigo VARCHAR(120) UNIQUE,
+  id_usuario INT REFERENCES USUARIO(id),
+  expira_en TIMESTAMPTZ,
+  usado_en TIMESTAMPTZ,
+  id_estado_codigo INT REFERENCES ESTADO_CODIGO(id)
+);
+
+CREATE TABLE NOTIFICACION (
+  id SERIAL PRIMARY KEY,
+  id_usuario INT REFERENCES USUARIO(id),
+  id_cita INT REFERENCES CITA(id),
+  mensaje TEXT,
+  canal VARCHAR(40),
+  fecha_envio TIMESTAMPTZ,
+  estado VARCHAR(40)
+);
+
+CREATE TABLE ASEGURADORA (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(200),
+  rfc VARCHAR(20),
+  telefono VARCHAR(30),
+  correo VARCHAR(255)
+);
+
+CREATE TABLE POLIZA (
+  id SERIAL PRIMARY KEY,
+  id_paciente INT REFERENCES PACIENTE(id) ON DELETE CASCADE,
+  id_aseguradora INT REFERENCES ASEGURADORA(id),
+  numero_poliza VARCHAR(100),
+  vigente_desde DATE,
+  vigente_hasta DATE
+);
+
+-- Permisos al usuario
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ai_med_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ai_med_user;
+
+-- Índices
+CREATE INDEX IF NOT EXISTS idx_cita_fecha_inicio ON CITA(fecha_inicio);
+CREATE INDEX IF NOT EXISTS idx_consulta_fecha_hora ON CONSULTA(fecha_hora);
+CREATE INDEX IF NOT EXISTS idx_auditoria_fecha_hora ON AUDITORIA(fecha_hora);
+CREATE INDEX IF NOT EXISTS idx_poliza_vigencias ON POLIZA(vigente_desde, vigente_hasta);
+CREATE INDEX IF NOT EXISTS idx_notificacion_fecha ON NOTIFICACION(fecha_envio);
+CREATE INDEX IF NOT EXISTS idx_usuario_username ON USUARIO(username);
+CREATE INDEX IF NOT EXISTS idx_usuario_correo ON USUARIO(correo);
+CREATE INDEX IF NOT EXISTS idx_medico_cedula ON MEDICO(cedula);
+
+-- FIN DEL SCRIPT
+
