@@ -45,8 +45,8 @@ class CMSUser(HttpUser):
         
         # PASO 1: PRIMERO - Generar token de login
         login_data = {
-            "username": "admin",
-            "password": "password"
+            "username": "carlos_ramirez",
+            "password": "password123"
         }
         
         with self.client.post(
