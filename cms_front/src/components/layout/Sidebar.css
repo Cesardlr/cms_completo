@@ -1,0 +1,123 @@
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-align: center;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 0;
+}
+
+.sidebar-item,
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+}
+
+.sidebar-item:hover,
+.sidebar-toggle:hover {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.sidebar-item.active {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  border-right: 3px solid var(--primary-color);
+}
+
+.sidebar-icon {
+  margin-right: 12px;
+  font-size: 18px;
+}
+
+.sidebar-text {
+  flex: 1;
+}
+
+.sidebar-arrow {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.sidebar-toggle.active .sidebar-arrow {
+  transform: rotate(0deg);
+}
+
+.sidebar-submenu {
+  background: var(--background);
+  padding: 4px 0;
+}
+
+.sidebar-subitem {
+  display: block;
+  padding: 10px 20px 10px 52px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.sidebar-subitem:hover {
+  background: rgba(37, 99, 235, 0.05);
+  color: var(--text-primary);
+}
+
+.sidebar-subitem.active {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.sidebar-menu-group {
+  margin-bottom: 4px;
+}
+
+/* Scrollbar styling */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
